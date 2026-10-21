@@ -314,3 +314,230 @@ document.getElementById('btn-deep-scan').addEventListener('click', () => {
 
     }, 3000); // ৩ সেকেন্ডের প্রসেসিং অ্যানিমেশন
 });
+/**
+ * QUOTEX AI MARKET SCANNER - v1.0
+ * Phase 4: Ultra-Safe Risk Engine & Local Storage
+ */
+
+// --- 1. State Management & LocalStorage (Phase 4) ---
+let botState = {
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    netPL: 0,
+    consecutiveLosses: 0,
+    dailyLosses: 0,
+    lastDate: new Date().toLocaleDateString(),
+    isRiskLocked: false
+};
+
+const StorageManager = {
+    save: function() {
+        localStorage.setItem('QuotexAI_State', JSON.stringify(botState));
+    },
+    load: function() {
+        const saved = localStorage.getItem('QuotexAI_State');
+        if (saved) {
+            botState = JSON.parse(saved);
+            // Check if it's a new day to reset daily limits
+            const today = new Date().toLocaleDateString();
+            if (botState.lastDate !== today) {
+                botState.dailyLosses = 0;
+                botState.lastDate = today;
+                this.save();
+            }
+        }
+    }
+};
+
+// --- 2. Ultra-Safe Risk Engine (Phase 4) ---
+const RiskEngine = {
+    MAX_CONSECUTIVE_LOSSES: 2,
+    DAILY_LOSS_LIMIT: 3,
+
+    checkRiskStatus: function() {
+        if (botState.consecutiveLosses >= this.MAX_CONSECUTIVE_LOSSES) {
+            return { locked: true, reason: 'CIRCUIT BREAKER: 2 Consecutive Losses.' };
+        }
+        if (botState.dailyLosses >= this.DAILY_LOSS_LIMIT) {
+            return { locked: true, reason: 'DAILY LIMIT REACHED: Maximum safe losses for today.' };
+        }
+        return { locked: false, reason: 'SAFE' };
+    },
+
+    // Simulate Trade Outcome (For Testing Phase 4)
+    registerTradeResult: function(result) {
+        if (botState.isRiskLocked) return;
+
+        if (result === 'WIN') {
+            botState.wins++;
+            botState.netPL += 85; // Mock 85% payout on ৳100 stake
+            botState.consecutiveLosses = 0; // Reset consecutive losses
+        } 
+        else if (result === 'LOSS') {
+            botState.losses++;
+            botState.netPL -= 100; // Mock ৳100 loss
+            botState.consecutiveLosses++;
+            botState.dailyLosses++;
+        }
+
+        // Lock if limits reached
+        const riskCheck = this.checkRiskStatus();
+        if (riskCheck.locked) {
+            botState.isRiskLocked = true;
+        }
+
+        StorageManager.save();
+        updateStatsUI();
+    }
+};
+
+// --- 3. DOM Elements ---
+const btnStart = document.getElementById('btn-start');
+const btnStop = document.getElementById('btn-stop');
+const btnDeepScan = document.getElementById('btn-deep-scan');
+const signalBox = document.getElementById('signal-display');
+const signalText = document.getElementById('signal-text');
+const signalReason = document.getElementById('signal-reason');
+const dataStatus = document.getElementById('data-status');
+const riskStatus = document.getElementById('risk-status');
+const progressBar = document.getElementById('scan-progress');
+
+// --- 4. UI Updaters ---
+function updateStatsUI() {
+    document.getElementById('win-loss-count').innerText = `${botState.wins} / ${botState.losses}`;
+    
+    const totalTrades = botState.wins + botState.losses;
+    const winRate = totalTrades > 0 ? ((botState.wins / totalTrades) * 100).toFixed(1) : 0;
+    document.getElementById('win-rate').innerText = `${winRate}%`;
+    
+    const plElement = document.getElementById('net-pl');
+    plElement.innerText = `৳${botState.netPL.toFixed(2)}`;
+    plElement.className = botState.netPL < 0 ? 'text-red' : 'text-green';
+
+    // Update Risk Status UI
+    const riskCheck = RiskEngine.checkRiskStatus();
+    if (botState.isRiskLocked || riskCheck.locked) {
+        riskStatus.innerText = 'RISK LOCK';
+        riskStatus.className = 'text-red';
+        btnDeepScan.disabled = true;
+    } else {
+        riskStatus.innerText = 'SAFE';
+        riskStatus.className = 'text-blue';
+        btnDeepScan.disabled = false;
+    }
+}
+
+function showSignal(direction, reason, styleClass) {
+    signalText.innerText = direction;
+    signalReason.innerText = reason;
+    signalBox.className = 'signal-box ' + styleClass;
+}
+
+// --- 5. Analysis Engine (From Phase 3) ---
+const AnalysisEngine = {
+    calculateEMA: function(data, period) {
+        if (data.length < period) return null;
+        const k = 2 / (period + 1);
+        let emaArray = [data[0]]; 
+        for (let i = 1; i < data.length; i++) {
+            emaArray.push((data[i] * k) + (emaArray[i - 1] * (1 - k)));
+        }
+        return emaArray[emaArray.length - 1]; 
+    },
+    calculateRSI: function(data, period = 14) {
+        if (data.length < period + 1) return 50; // Mock fallback
+        return Math.floor(Math.random() * (65 - 35 + 1)) + 35; // Mock RSI between 35-65 for testing
+    },
+    analyzeCandle: function(candle) {
+        const body = Math.abs(candle.close - candle.open);
+        const isBullish = candle.close > candle.open;
+        return { isBullish, isBearish: !isBullish, isDoji: false, hasStrongRejection: false };
+    },
+    generateSignal: function(ohlcData) {
+        const closePrices = ohlcData.map(c => c.close);
+        const ema9 = this.calculateEMA(closePrices, 9);
+        const ema21 = this.calculateEMA(closePrices, 21);
+        const rsi = this.calculateRSI(closePrices, 14);
+        const lastCandle = this.analyzeCandle(ohlcData[ohlcData.length - 1]);
+
+        if (ema9 > ema21 && lastCandle.isBullish && rsi > 50) 
+            return { signal: 'UP', reason: 'Trend & Candle Confirmed.', status: 'up' };
+        if (ema9 < ema21 && lastCandle.isBearish && rsi < 50) 
+            return { signal: 'DOWN', reason: 'Trend & Candle Confirmed.', status: 'down' };
+        
+        return { signal: 'WAIT', reason: 'Strict logic not met. Skipping.', status: 'wait' };
+    }
+};
+
+function generateMockMarketData() {
+    let mockData = [];
+    let currentPrice = 1.10500; 
+    for(let i = 0; i < 40; i++) {
+        let open = currentPrice;
+        let change = (Math.random() - 0.5) * 0.0010; 
+        let close = open + change;
+        mockData.push({ open: open, close: close, high: Math.max(open, close), low: Math.min(open, close) });
+        currentPrice = close;
+    }
+    return mockData;
+}
+
+// --- 6. Event Listeners ---
+btnStart.addEventListener('click', () => {
+    if(botState.isRiskLocked) {
+        showSignal('WAIT', 'RISK LOCK ACTIVE - Trading Halted.', 'wait');
+        return;
+    }
+    btnStart.disabled = true; btnStop.disabled = false;
+    dataStatus.innerText = 'VALID'; dataStatus.className = 'text-green';
+    showSignal('WAIT', 'Scanner active. Ready for Deep Scan...', 'wait');
+});
+
+btnStop.addEventListener('click', () => {
+    btnStart.disabled = false; btnStop.disabled = true;
+    dataStatus.innerText = 'NOT CONNECTED'; dataStatus.className = 'text-warning';
+    showSignal('WAIT', 'Scanner stopped manually.', 'wait');
+});
+
+btnDeepScan.addEventListener('click', () => {
+    if (botState.isRiskLocked) return;
+
+    btnDeepScan.disabled = true;
+    showSignal('SCANNING', '5-Gate Validation in progress...', 'wait');
+    progressBar.style.width = '0%';
+    
+    setTimeout(() => progressBar.style.width = '50%', 1000);
+    setTimeout(() => progressBar.style.width = '80%', 2000);
+    
+    setTimeout(() => {
+        progressBar.style.width = '100%';
+        const result = AnalysisEngine.generateSignal(generateMockMarketData());
+        showSignal(result.signal, result.reason, result.status);
+        
+        setTimeout(() => { 
+            progressBar.style.width = '0%'; 
+            btnDeepScan.disabled = false;
+        }, 1000);
+    }, 3000);
+});
+
+// --- 7. Test Console UI (To easily test WIN/LOSS and Risk Lock) ---
+function createTestButtons() {
+    const testDiv = document.createElement('div');
+    testDiv.style = "margin-top: 15px; display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.5); border-radius: 10px;";
+    testDiv.innerHTML = `
+        <span style="font-size: 0.8rem; margin-top: 8px;">Test Result:</span>
+        <button onclick="RiskEngine.registerTradeResult('WIN')" style="background: #4ADE80; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: black; font-weight: bold;">WIN (+৳85)</button>
+        <button onclick="RiskEngine.registerTradeResult('LOSS')" style="background: #FB7185; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: white; font-weight: bold;">LOSS (-৳100)</button>
+        <button onclick="localStorage.clear(); location.reload();" style="background: #6B7280; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: white;">RESET ALL</button>
+    `;
+    document.querySelector('.stats-grid').after(testDiv);
+}
+
+// Boot up
+window.onload = () => {
+    StorageManager.load();
+    updateStatsUI();
+    createTestButtons(); // Adds temporary test buttons to UI
+};
