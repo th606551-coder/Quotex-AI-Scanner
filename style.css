@@ -105,3 +105,36 @@ input:checked + .slider { background-color: var(--primary-blue); }
 input:checked + .slider:before { transform: translateX(20px); }
 .slider.round { border-radius: 20px; }
 .slider.round:before { border-radius: 50%; }
+/* --- Phase 5: Modal & Journal Styles --- */
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+.modal.hidden { display: none; }
+.modal-content {
+    width: 90%; max-width: 450px;
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+}
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+}
+.modal-header h2 { font-size: 1.2rem; color: var(--primary-blue); }
+.close-btn { padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+.table-container {
+    overflow-y: auto;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+}
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
+th, td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+th { color: var(--text-muted); font-weight: 600; position: sticky; top: 0; background: var(--bg-dark); }
+.res-win { color: var(--success-green); font-weight: bold; }
+.res-loss { color: var(--danger-red); font-weight: bold; }
+.res-pend { color: var(--warning-yellow); }
