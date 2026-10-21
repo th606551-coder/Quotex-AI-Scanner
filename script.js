@@ -171,3 +171,109 @@ function updateStatsUI() {
     if(journal.netPL < 0) document.getElementById('net-pl').className = 'text-red';
     else document.getElementById('net-pl').className = 'text-green';
 }
+/**
+ * PHASE 3: ANALYSIS ENGINE (TECHNICAL INDICATORS & CANDLE LOGIC)
+ * Calculates EMA, RSI, ATR, and strict candle patterns.
+ */
+
+const AnalysisEngine = {
+    
+    // ১. EMA (Exponential Moving Average) ক্যালকুলেটর
+    calculateEMA: function(data, period) {
+        if (data.length < period) return null;
+        const k = 2 / (period + 1);
+        let emaArray = [data[0]]; // প্রথম ভ্যালুটিকে SMA হিসেবে ধরা হলো
+        
+        for (let i = 1; i < data.length; i++) {
+            const currentEMA = (data[i] * k) + (emaArray[i - 1] * (1 - k));
+            emaArray.push(currentEMA);
+        }
+        return emaArray[emaArray.length - 1]; // সর্বশেষ EMA ভ্যালু রিটার্ন করবে
+    },
+
+    // ২. RSI (Relative Strength Index) ক্যালকুলেটর
+    calculateRSI: function(data, period = 14) {
+        if (data.length < period + 1) return null;
+        let gains = 0, losses = 0;
+
+        for (let i = 1; i <= period; i++) {
+            const difference = data[i] - data[i - 1];
+            if (difference > 0) gains += difference;
+            else losses -= difference;
+        }
+
+        let avgGain = gains / period;
+        let avgLoss = losses / period;
+
+        for (let i = period + 1; i < data.length; i++) {
+            const difference = data[i] - data[i - 1];
+            let gain = difference > 0 ? difference : 0;
+            let loss = difference < 0 ? -difference : 0;
+
+            avgGain = ((avgGain * (period - 1)) + gain) / period;
+            avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+        }
+
+        if (avgLoss === 0) return 100;
+        const rs = avgGain / avgLoss;
+        return 100 - (100 / (1 + rs)); // সর্বশেষ RSI রিটার্ন করবে
+    },
+
+    // ৩. ক্যান্ডেলস্টিক স্ট্রাকচার ও রিজেকশন অ্যানালাইসিস
+    analyzeCandle: function(candle) {
+        const { open, high, low, close } = candle;
+        const body = Math.abs(close - open);
+        const totalSize = high - low;
+        const upperWick = high - Math.max(open, close);
+        const lowerWick = Math.min(open, close) - low;
+        
+        const isBullish = close > open;
+        const isBearish = close < open;
+        
+        // Strict Validation: ক্যান্ডেলের বডি খুব ছোট বা উইক খুব বড় হলে তা রিস্কি
+        const isDoji = body <= (totalSize * 0.1); 
+        const hasStrongRejection = (isBullish && lowerWick > body * 1.5) || (isBearish && upperWick > body * 1.5);
+
+        return {
+            isBullish,
+            isBearish,
+            isDoji,
+            hasStrongRejection,
+            body,
+            totalSize
+        };
+    },
+
+    // ৪. 5-Gate Ultra-Safe Decision Maker
+    generateSignal: function(ohlcData) {
+        // শুধু Close প্রাইসের অ্যারে তৈরি করা (EMA ও RSI এর জন্য)
+        const closePrices = ohlcData.map(candle => candle.close);
+        
+        // Gate 1: Data Check
+        if (closePrices.length < 30) return { signal: 'WAIT', reason: 'Not enough historical data (warming up).', status: 'wait' };
+
+        // Indicators
+        const ema9 = this.calculateEMA(closePrices, 9);
+        const ema21 = this.calculateEMA(closePrices, 21);
+        const rsi = this.calculateRSI(closePrices, 14);
+        const lastCandle = this.analyzeCandle(ohlcData[ohlcData.length - 1]);
+
+        // Gate 2: Trend Confirmation
+        const isUptrend = ema9 > ema21;
+        const isDowntrend = ema9 < ema21;
+
+        // Gate 3 & 4: Momentum & Candle Validation
+        if (lastCandle.isDoji) return { signal: 'WAIT', reason: 'Doji detected. Market undecided.', status: 'wait' };
+        if (rsi > 75 || rsi < 25) return { signal: 'WAIT', reason: 'Extreme Momentum (Overbought/Oversold).', status: 'wait' };
+
+        // Gate 5: Final Signal Execution
+        if (isUptrend && lastCandle.isBullish && !lastCandle.hasStrongRejection && rsi > 50) {
+            return { signal: 'UP', reason: 'Uptrend, Bullish Candle & Solid RSI Confirmed.', status: 'up' };
+        } 
+        else if (isDowntrend && lastCandle.isBearish && !lastCandle.hasStrongRejection && rsi < 50) {
+            return { signal: 'DOWN', reason: 'Downtrend, Bearish Candle & Solid RSI Confirmed.', status: 'down' };
+        }
+
+        return { signal: 'WAIT', reason: 'Strict criteria not met. Skipping to next candle.', status: 'wait' };
+    }
+};
