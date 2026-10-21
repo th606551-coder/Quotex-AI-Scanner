@@ -57,6 +57,9 @@
             </div>
         </section>
 
+        <!-- Phase 5: Journal Button -->
+        <button id="btn-journal" class="btn btn-cyan" style="margin-bottom: 15px; border-style: dashed;">📖 VIEW TRADE JOURNAL</button>
+
         <!-- Auto Trading Toggle -->
         <div class="auto-trade-section glass-panel-inner">
             <span>Auto-Trading (Strict Confirmation)</span>
@@ -66,6 +69,31 @@
             </label>
         </div>
 
+    </div>
+
+    <!-- Phase 5: Trade Journal Modal -->
+    <div id="journal-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Trade Journal</h2>
+                <button id="close-journal" class="btn-danger close-btn">X</button>
+            </div>
+            <div class="table-container">
+                <table id="journal-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Dir</th>
+                            <th>Result</th>
+                            <th>P/L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="journal-body">
+                        <!-- History Rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
