@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotex AI Scanner v1.0</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="dashboard-container glass-panel">
+        
+        <!-- Header Section -->
+        <header class="header">
+            <div class="branding">
+                <h1>QUOTEX AI <span>v1.0</span></h1>
+                <span class="badge demo-badge">DEMO MODE</span>
+            </div>
+            <div class="status-bar">
+                <div class="status-item">Data: <span id="data-status" class="text-warning">NOT CONNECTED</span></div>
+                <div class="status-item">Asset: <span class="text-blue">EUR/USD</span></div>
+                <div class="status-item">Time: <span class="text-blue">1 MIN</span></div>
+            </div>
+        </header>
+
+        <!-- Main Scanner Screen -->
+        <main class="scanner-display glass-panel-inner">
+            <h2 class="section-title">AI MARKET SCANNER</h2>
+            <div id="signal-display" class="signal-box wait">
+                <h1 id="signal-text">WAIT</h1>
+                <p id="signal-reason">Waiting for valid data connection...</p>
+            </div>
+            <div class="progress-container">
+                <div id="scan-progress" class="progress-bar"></div>
+            </div>
+        </main>
+
+        <!-- Controls -->
+        <section class="controls">
+            <button id="btn-start" class="btn btn-primary">START SCANNER</button>
+            <button id="btn-stop" class="btn btn-danger" disabled>STOP SCANNER</button>
+            <button id="btn-deep-scan" class="btn btn-cyan">DEEP SCAN</button>
+        </section>
+
+        <!-- Stats & Risk Management -->
+        <section class="stats-grid">
+            <div class="stat-card glass-panel-inner">
+                <h3>WIN / LOSS</h3>
+                <h2 id="win-loss-count">0 / 0</h2>
+                <p>Win Rate: <span id="win-rate">0%</span></p>
+            </div>
+            <div class="stat-card glass-panel-inner">
+                <h3>NET P/L</h3>
+                <h2 id="net-pl" class="text-green">৳0.00</h2>
+                <p>Status: <span id="risk-status" class="text-blue">SAFE</span></p>
+            </div>
+        </section>
+
+        <!-- Auto Trading Toggle -->
+        <div class="auto-trade-section glass-panel-inner">
+            <span>Auto-Trading (Strict Confirmation)</span>
+            <label class="switch">
+                <input type="checkbox" id="auto-trade-toggle" disabled>
+                <span class="slider round"></span>
+            </label>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
