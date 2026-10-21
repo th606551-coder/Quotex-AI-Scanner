@@ -277,3 +277,40 @@ const AnalysisEngine = {
         return { signal: 'WAIT', reason: 'Strict criteria not met. Skipping to next candle.', status: 'wait' };
     }
 };
+// ফেক ক্যান্ডেল ডেটা তৈরি করার ফাংশন (শুধুমাত্র ইঞ্জিন টেস্ট করার জন্য)
+function generateMockMarketData() {
+    let mockData = [];
+    let currentPrice = 1.10500; // EUR/USD Mock Price
+    
+    for(let i = 0; i < 40; i++) {
+        let open = currentPrice;
+        let change = (Math.random() - 0.5) * 0.0010; // Random price movement
+        let close = open + change;
+        let high = Math.max(open, close) + (Math.random() * 0.0005);
+        let low = Math.min(open, close) - (Math.random() * 0.0005);
+        
+        mockData.push({ open, high, low, close });
+        currentPrice = close;
+    }
+    return mockData;
+}
+
+// Deep Scan বাটনের আপডেটেড ইভেন্ট
+document.getElementById('btn-deep-scan').addEventListener('click', () => {
+    if(isRiskLocked) return;
+    
+    // UI Update (Scanning...)
+    showSignal('SCANNING', 'Analyzing EMA, RSI & Candle Structure...', 'wait');
+    
+    setTimeout(() => {
+        // ১. মার্কেট থেকে OHLC ডেটা নেওয়া (বর্তমানে Mock Data)
+        const marketData = generateMockMarketData();
+        
+        // ২. Analysis Engine দিয়ে ডেটা প্রসেস করা
+        const result = AnalysisEngine.generateSignal(marketData);
+        
+        // ৩. UI-তে সিগন্যাল শো করা
+        showSignal(result.signal, result.reason, result.status);
+
+    }, 3000); // ৩ সেকেন্ডের প্রসেসিং অ্যানিমেশন
+});
